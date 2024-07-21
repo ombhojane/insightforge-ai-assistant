@@ -9,6 +9,7 @@ import { auth } from '../../firebase/config';
 import { useRouter } from 'next/navigation';
 import FileManager from '../../components/FileManager';
 import Search from '../../components/Search';
+import Image from 'next/image';
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
@@ -81,7 +82,7 @@ export default function Dashboard() {
       <div className="flex flex-col justify-between h-screen bg-gray-800 p-7 mx-auto max-w-full">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
-            <img src="/Insights.forge.png" alt="Logo" className="h-16 w-16 mr-2" />
+            <Image src="/Insights.forge.png" alt="Logo" className="h-16 w-16 mr-2" />
             <span className="flex justify-left text-4xl font-bold mb-0">
               <a href="/" className="text-green-500">Insights</a>
               <a href="/" className="text-white">.Forge</a>

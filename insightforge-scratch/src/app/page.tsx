@@ -129,7 +129,7 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-12">
               <div className="w-full max-w-sm bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Real-Time Analytics</h3>
-                <p className="text-lg">Get instant insights and analytics on your data as soon as it's processed. Our real-time analytics engine ensures that you can make informed decisions quickly.</p>
+                <p className="text-lg">Get instant insights and analytics on your data as soon as its processed. Our real-time analytics engine ensures that you can make informed decisions quickly.</p>
               </div>
               <div className="w-full max-w-sm bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Advanced Data Visualization</h3>
@@ -166,27 +166,27 @@ export default function Home() {
             <div className="space-y-12">
               <div className="max-w-3xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Inventory and Supply Chain Optimization</h3>
-                <p className="text-lg">Q: "Based on current trends and upcoming events, how should we adjust our inventory and supplier orders for the next quarter?"</p>
+                <p className="text-lg">Q: Based on current trends and upcoming events, how should we adjust our inventory and supplier orders for the next quarter?</p>
                 <p className="text-lg">A: The assistant analyzes sales data, market trends, event calendars, and supplier performance to provide comprehensive inventory and ordering recommendations.</p>
               </div>
               <div className="max-w-3xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Financial Planning and Analysis</h3>
-                <p className="text-lg">Q: "How would a 10% increase in marketing spend impact our profitability, considering seasonal trends and competitor activities?"</p>
+                <p className="text-lg">Q: How would a 10% increase in marketing spend impact our profitability, considering seasonal trends and competitor activities?</p>
                 <p className="text-lg">A: The system runs scenario analyses, considering historical data, market conditions, and competitive landscape to forecast the financial impact.</p>
               </div>
               <div className="max-w-3xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Customer Behavior and Marketing Effectiveness</h3>
-                <p className="text-lg">Q: "What customer segments are most responsive to our recent marketing campaign, and how has this affected their purchasing patterns?"</p>
+                <p className="text-lg">Q: What customer segments are most responsive to our recent marketing campaign, and how has this affected their purchasing patterns?</p>
                 <p className="text-lg">A: The assistant combines CRM data, marketing campaign results, and sales data to provide insights on customer segmentation and behavior changes.</p>
               </div>
               <div className="max-w-3xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Human Resources and Staffing Optimization</h3>
-                <p className="text-lg">Q: "Based on historical data and predicted foot traffic, what should our staffing levels be for each department next month?"</p>
+                <p className="text-lg">Q: Based on historical data and predicted foot traffic, what should our staffing levels be for each department next month?</p>
                 <p className="text-lg">A: By analyzing sales data, foot traffic patterns, and labor efficiency metrics, the system offers data-driven staffing recommendations.</p>
               </div>
               <div className="max-w-3xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold text-green-500 mb-4">Competitive Analysis and Market Positioning</h3>
-                <p className="text-lg">Q: "How does our product mix and pricing strategy compare to our top competitors, and where are the opportunities for differentiation?"</p>
+                <p className="text-lg">Q: How does our product mix and pricing strategy compare to our top competitors, and where are the opportunities for differentiation?</p>
                 <p className="text-lg">A: The assistant analyzes market data, competitor information, and internal sales data to provide strategic insights on market positioning.</p>
               </div>
             </div>
