@@ -5,17 +5,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadDocuments() {
     try {
         const response = await fetch('/documents');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const result = await response.json();
+        console.log('Received documents:', result);
         const select = document.getElementById('documentSelect');
         select.innerHTML = '<option value="">Select a document to update</option>';
-        result.documents.forEach(doc => {
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = doc.source || doc.id;
-            select.appendChild(option);
-        });
+        if (result.documents && Array.isArray(result.documents)) {
+            result.documents.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.source || doc.id;
+                select.appendChild(option);
+            });
+        } else {
+            console.error('Unexpected response format:', result);
+        }
     } catch (error) {
         console.error('Error loading documents:', error);
+        alert('Failed to load documents. Please check the server logs for more information.');
     }
 }
 
@@ -78,36 +87,6 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
     }
 });
 
-document.getElementById('getInsights').addEventListener('click', async () => {
-    try {
-        const response = await fetch('/insights');
-        const result = await response.json();
-        if (response.ok) {
-            displayInsights(result.insight);
-        } else {
-            throw new Error(result.message || 'An error occurred while fetching insights.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message);
-    }
-});
-
-document.getElementById('getPatterns').addEventListener('click', async () => {
-    try {
-        const response = await fetch('/patterns');
-        const result = await response.json();
-        if (response.ok) {
-            displayPatterns(result.pattern);
-        } else {
-            throw new Error(result.message || 'An error occurred while fetching patterns.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message);
-    }
-});
-
 function displayResults(results) {
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '<h3>Search Results</h3>';
@@ -130,10 +109,47 @@ function displayResults(results) {
     });
 }
 
+document.getElementById('getInsights').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/insights');
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        const result = await response.json();
+        console.log('Received insights:', result);
+        if (result.insight) {
+            displayInsights(result.insight);
+        } else {
+            alert('No insights available. Please try again later.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to fetch insights. Please check the server logs for more information.');
+    }
+});
+
 function displayInsights(insight) {
     const insightsDiv = document.getElementById('insights');
     insightsDiv.innerHTML = `<h3>Latest Insight</h3><p>${insight}</p>`;
 }
+
+document.getElementById('getPatterns').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/patterns');
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        const result = await response.json();
+        console.log('Received patterns:', result);
+        displayPatterns(result.pattern);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to fetch patterns. Please check the server logs for more information.');
+    }
+});
+
 
 function displayPatterns(pattern) {
     const patternsDiv = document.getElementById('patterns');

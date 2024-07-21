@@ -56,9 +56,12 @@ async def upload_file(file: UploadFile = File(...)):
 async def list_documents():
     try:
         documents = await get_all_documents()
+        print(f"Documents retrieved: {documents}")
         return DocumentListResponse(documents=documents)
     except Exception as e:
+        print(f"Error in list_documents: {e}")
         return JSONResponse(content={"message": f"Error: {str(e)}"}, status_code=500)
+    
 
 @app.post("/update/{document_id}")
 async def update_file(document_id: str, file: UploadFile = File(...)):
@@ -91,38 +94,64 @@ async def search(query: str = Form(...), filters: str = Form(None)):
         print(f"Search error: {str(e)}")
         return JSONResponse(content={"message": f"Error: {str(e)}"}, status_code=500)
 
+async def get_latest_insight():
+    try:
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            expr="metadata['type'] == 'insight'",
+            limit=1,
+            sort_fields=["metadata['timestamp']"],
+            sort_orders=["DESC"]
+        )
+        print(f"Latest insight query results: {results}")
+        if results:
+            return results[0]['metadata']['content']
+        return None
+    except Exception as e:
+        print(f"Error fetching latest insight: {e}")
+        return None
+
+async def get_latest_pattern():
+    try:
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            expr="metadata['type'] == 'pattern'",
+            limit=1,
+            sort_fields=["metadata['timestamp']"],
+            sort_orders=["DESC"]
+        )
+        print(f"Latest pattern query results: {results}")
+        if results:
+            return results[0]['metadata']['content']
+        return None
+    except Exception as e:
+        print(f"Error fetching latest pattern: {e}")
+        return None
+    
 @app.get("/insights")
 async def get_insights():
     try:
-        await generate_insights()
-        results = zilliz_client.search(
-            collection_name="documents",
-            data=[embed_model.get_text_embedding("latest insight")],
-            limit=1,
-            expr="metadata.type == 'insight'",
-            output_fields=["metadata"]
-        )
-        if results and results[0]:
-            return InsightResponse(insight=results[0]["metadata"]["content"])
+        insights = await generate_insights()
+        if insights:
+            return InsightResponse(insight=insights)
         else:
-            return JSONResponse(content={"message": "No insights available"}, status_code=404)
+            return JSONResponse(content={"message": "No insights available yet. Please try again later."}, status_code=404)
     except Exception as e:
-        return JSONResponse(content={"message": f"Error: {str(e)}"}, status_code=500)
-
+        print(f"Error in get_insights: {e}")
+        return JSONResponse(content={"message": f"Error generating insights: {str(e)}"}, status_code=500)
+    
 @app.get("/patterns")
 async def get_patterns():
     try:
         await identify_patterns()
-        results = zilliz_client.search(
-            collection_name="documents",
-            data=[embed_model.get_text_embedding("latest pattern")],
-            limit=1,
-            expr="metadata.type == 'pattern'",
-            output_fields=["metadata"]
-        )
-        if results and results[0]:
-            return PatternResponse(pattern=results[0]["metadata"]["content"])
+        pattern = await get_latest_pattern()
+        print(f"Latest pattern: {pattern}")
+        if pattern:
+            return PatternResponse(pattern=pattern)
         else:
-            return JSONResponse(content={"message": "No patterns available"}, status_code=404)
+            return JSONResponse(content={"message": "No patterns available yet. Please try again later."}, status_code=404)
     except Exception as e:
-        return JSONResponse(content={"message": f"Error: {str(e)}"}, status_code=500)
+        print(f"Error in get_patterns: {e}")
+        return JSONResponse(content={"message": f"Error identifying patterns: {str(e)}"}, status_code=500)

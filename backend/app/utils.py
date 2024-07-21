@@ -204,90 +204,138 @@ async def search_documents(query_text, filters=None, limit=5):
     return processed_results
 
 async def generate_insights():
-    # Fetch all documents
-    results = zilliz_client.query(
-        collection_name="documents",
-        output_fields=["metadata"],
-        limit=1000  # Adjust as needed
-    )
-
-    documents = [result["metadata"] for result in results]
+    try:
+        print("Attempting to generate insights")
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            limit=1000
+        )
+        print(f"Query results for insights: {results}")
+        documents = [result["metadata"] for result in results]
+        
+        prompt = f"Analyze the following documents and provide insights:\n\n{json.dumps(documents, indent=2)}"
+        insights = llm.complete(prompt).text.strip()
+        print(f"Generated insights: {insights}")
+        
+        try:
+            insight_data = {
+                "vector": embed_model.get_text_embedding("latest insight"),
+                "metadata": {
+                    "type": "insight",
+                    "content": insights,
+                    "timestamp": datetime.now().isoformat()
+                }
+            }
+            # Generate a unique ID for the insight
+            import uuid
+            insight_id = str(uuid.uuid4())
+            insight_data["id"] = insight_id
+            
+            zilliz_client.insert(collection_name="documents", data=[insight_data])
+            print("Insight inserted into Zilliz")
+        except Exception as e:
+            print(f"Failed to insert insight into Zilliz: {e}")
+            print("Returning generated insights without storing in the database")
+        
+        return insights
+    except Exception as e:
+        print(f"Error generating insights: {e}")
+        raise
     
-    prompt = f"Analyze the following documents and provide insights:\n\n{json.dumps(documents, indent=2)}"
-    insights = llm.complete(prompt).text.strip()
-    
-    # Store insights in a new collection or as a special document
-    insight_data = {
-        "metadata": {
-            "type": "insight",
-            "content": insights,
-            "timestamp": datetime.now().isoformat()
-        }
-    }
-    zilliz_client.insert(collection_name="documents", data=[insight_data])
-
-
 async def identify_patterns():
-    # Fetch all documents
-    results = zilliz_client.query(
-        collection_name="documents",
-        output_fields=["metadata"],
-        limit=1000  # Adjust as needed
-    )
-
-    documents = [result["metadata"] for result in results]
-    
-    prompt = f"Identify patterns across these documents:\n\n{json.dumps(documents, indent=2)}"
-    patterns = llm.complete(prompt).text.strip()
-    
-    # Store patterns in a new collection or as a special document
-    pattern_data = {
-        "metadata": {
-            "type": "pattern",
-            "content": patterns,
-            "timestamp": datetime.now().isoformat()
+    try:
+        print("Attempting to identify patterns")
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            limit=1000
+        )
+        print(f"Query results for patterns: {results}")
+        documents = [result["metadata"] for result in results]
+        
+        prompt = f"Identify patterns across these documents:\n\n{json.dumps(documents, indent=2)}"
+        patterns = llm.complete(prompt).text.strip()
+        print(f"Identified patterns: {patterns}")
+        
+        pattern_data = {
+            "vector": embed_model.get_text_embedding("latest pattern"),
+            "metadata": {
+                "type": "pattern",
+                "content": patterns,
+                "timestamp": datetime.now().isoformat()
+            }
         }
-    }
-    zilliz_client.insert(collection_name="documents", data=[pattern_data])
-
-
+        # Generate a unique ID for the pattern
+        import uuid
+        pattern_id = str(uuid.uuid4())
+        pattern_data["id"] = pattern_id
+        
+        zilliz_client.insert(collection_name="documents", data=[pattern_data])
+        print("Pattern inserted into Zilliz")
+    except Exception as e:
+        print(f"Error identifying patterns: {e}")
+        raise  # Re-raise the exception to be caught by the calling function
+    
 async def get_all_documents():
-    results = zilliz_client.query(
-        collection_name="documents",
-        output_fields=["metadata"],
-        expr="metadata.type != 'insight' && metadata.type != 'pattern'",
-        limit=1000  # Adjust as needed
-    )
-    return [result["metadata"] for result in results]
-
-
-# ... (keep existing imports and setup)
-
+    try:
+        print("Attempting to fetch documents from Zilliz")
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["id", "metadata"],
+            expr="metadata['type'] != 'insight' && metadata['type'] != 'pattern'",
+            limit=1000
+        )
+        print(f"Query results: {results}")
+        documents = []
+        for result in results:
+            doc = {
+                "id": result.get("id", "Unknown"),
+                "source": result.get("metadata", {}).get("source", "Unknown")
+            }
+            documents.append(doc)
+        print(f"Processed documents: {documents}")
+        return documents
+    except Exception as e:
+        print(f"Error fetching documents: {e}")
+        return []
+        
 async def get_latest_insight():
-    results = zilliz_client.query(
-        collection_name="documents",
-        output_fields=["metadata"],
-        expr="metadata['type'] == 'insight'",
-        limit=1,
-        sort="metadata['timestamp'] desc"
-    )
-    if results:
-        return results[0]['metadata']['content']
-    return None
+    try:
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            expr="metadata['type'] == 'insight'",
+            limit=1,
+            sort_fields=["metadata['timestamp']"],
+            sort_orders=["DESC"]
+        )
+        print(f"Latest insight query results: {results}")
+        if results:
+            return results[0]['metadata']['content']
+        return None
+    except Exception as e:
+        print(f"Error fetching latest insight: {e}")
+        return None
 
 async def get_latest_pattern():
-    results = zilliz_client.query(
-        collection_name="documents",
-        output_fields=["metadata"],
-        expr="metadata['type'] == 'pattern'",
-        limit=1,
-        sort="metadata['timestamp'] desc"
-    )
-    if results:
-        return results[0]['metadata']['content']
-    return None
-
-
+    try:
+        results = zilliz_client.query(
+            collection_name="documents",
+            output_fields=["metadata"],
+            expr="metadata['type'] == 'pattern'",
+            limit=1,
+            sort_fields=["metadata['timestamp']"],
+            sort_orders=["DESC"]
+        )
+        print(f"Latest pattern query results: {results}")
+        if results:
+            return results[0]['metadata']['content']
+        return None
+    except Exception as e:
+        print(f"Error fetching latest pattern: {e}")
+        return None
+        
 def get_embedding_dim(embed_model):
     test_embedding = embed_model.get_text_embedding("test")
     return len(test_embedding)
