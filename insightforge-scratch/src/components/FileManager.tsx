@@ -72,7 +72,7 @@ const FileManager: React.FC = () => {
     <div className="relative">
       <button
         onClick={() => setShowOptions(!showOptions)}
-        className="p-2 bg-blue-500 text-white rounded-full"
+        className="p-2 bg-green-500 text-white rounded-full"
       >
         <Paperclip size={24} />
       </button>
