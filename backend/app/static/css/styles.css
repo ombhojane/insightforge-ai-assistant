@@ -2,23 +2,31 @@ body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     margin: 0;
-    padding: 20px;
-    background-color: #f4f4f4;
-}
-
-h1 {
+    padding: 0;
+    background-color: #f0fff0;
     color: #333;
 }
 
-#uploadForm, #searchForm {
-    background: #fff;
+.container {
+    width: 80%;
+    margin: auto;
+    overflow: hidden;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #2e8b57;
+}
+
+.section {
+    background: #ffffff;
     padding: 20px;
     margin-bottom: 20px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-input[type="file"], input[type="text"] {
+input[type="file"], input[type="text"], select {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
@@ -27,7 +35,7 @@ input[type="file"], input[type="text"] {
 }
 
 button {
-    background: #333;
+    background: #2e8b57;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -36,14 +44,11 @@ button {
 }
 
 button:hover {
-    background: #555;
+    background: #3cb371;
 }
 
-#results {
-    background: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+#results, #insights, #patterns {
+    margin-top: 20px;
 }
 
 .result-item {

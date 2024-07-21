@@ -13,9 +13,10 @@ from llama_index.core.extractors import TitleExtractor
 from llama_index.core.schema import TransformComponent
 from pydantic import Field
 from pymilvus import MilvusClient
-from typing import Any
+from typing import Any, List
 import json
-
+from datetime import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # Set up environment variables and clients
 os.environ["TOGETHER_API_KEY"] = "25980fc3165cda837e9a45f2f5fca4230f89d883ccfce94834c38d958425bc68"
@@ -26,7 +27,6 @@ llm = TogetherLLM(model="mistralai/Mixtral-8x7B-Instruct-v0.1")
 embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
 zilliz_client = MilvusClient(uri=ZILLIZ_CLOUD_URI, token=ZILLIZ_CLOUD_TOKEN)
 
-# Utility functions and classes (reuse from the original script)
 def classify_document(text):
     prompt = f"Classify the following document as either 'invoice', 'contract', or 'report':\n\n{text[:500]}..."
     response = llm.complete(prompt)
@@ -56,12 +56,20 @@ class TextCleaner(TransformComponent):
             node.text = ' '.join(node.text.split())
         return nodes
 
+class VersionTracker(TransformComponent):
+    def __call__(self, nodes, **kwargs):
+        for node in nodes:
+            node.metadata["version"] = 1
+            node.metadata["last_updated"] = datetime.now().isoformat()
+        return nodes
+
 pipeline = IngestionPipeline(
     transformations=[
         TextCleaner(),
         SentenceSplitter(chunk_size=1024, chunk_overlap=20),
         TitleExtractor(llm=llm),
         KeyInfoExtractor(llm=llm),
+        VersionTracker(),
         embed_model,
     ]
 )
@@ -81,7 +89,6 @@ async def process_document(file_path):
             dimension=embed_dim
         )
 
-        # Rest of the function remains the same
         if file_path.lower().endswith('.pdf'):
             with open(file_path, 'rb') as file:
                 reader = PyPDF2.PdfReader(file)
@@ -117,15 +124,68 @@ async def process_document(file_path):
     except Exception as e:
         print(f"Error processing document: {e}")
         return None
-    
-async def search_documents(query_text, limit=5):
+
+async def update_document(file_path):
+    try:
+        # Process the new version of the document
+        new_nodes = await process_document(file_path)
+        
+        if not new_nodes:
+            return None
+
+        # Find existing documents with the same source
+        existing_docs = zilliz_client.query(
+            collection_name="documents",
+            expr=f"metadata.source == '{file_path}'",
+            output_fields=["id", "metadata"]
+        )
+
+        for new_node in new_nodes:
+            matching_doc = next((doc for doc in existing_docs if doc["metadata"]["source"] == file_path), None)
+            
+            if matching_doc:
+                # Update existing document
+                new_version = matching_doc["metadata"].get("version", 0) + 1
+                new_node.metadata["version"] = new_version
+                new_node.metadata["last_updated"] = datetime.now().isoformat()
+                
+                zilliz_client.delete(
+                    collection_name="documents",
+                    expr=f"id == '{matching_doc['id']}'"
+                )
+            else:
+                # Insert as a new document
+                new_node.metadata["version"] = 1
+                new_node.metadata["last_updated"] = datetime.now().isoformat()
+
+            zilliz_client.insert(
+                collection_name="documents",
+                data=[{
+                    "vector": new_node.embedding,
+                    "metadata": new_node.metadata
+                }]
+            )
+
+        return new_nodes
+
+    except Exception as e:
+        print(f"Error updating document: {e}")
+        return None
+
+async def search_documents(query_text, filters=None, limit=5):
     query_vector = embed_model.get_text_embedding(query_text)
-    results = zilliz_client.search(
-        collection_name="documents",
-        data=[query_vector],
-        limit=limit,
-        output_fields=["metadata"]
-    )
+    
+    search_params = {
+        "collection_name": "documents",
+        "data": [query_vector],
+        "limit": limit,
+        "output_fields": ["metadata"]
+    }
+    
+    if filters:
+        search_params["expr"] = filters
+
+    results = zilliz_client.search(**search_params)
     
     # Print the raw results for debugging
     print("Raw search results:")
@@ -136,12 +196,97 @@ async def search_documents(query_text, limit=5):
     for hit in results[0]:
         processed_hit = {
             "id": hit.get("id", "N/A"),
-            "distance": hit.get("distance", "N/A"),  # Changed from "score" to "distance"
+            "distance": hit.get("distance", "N/A"),
             "metadata": hit.get("entity", {}).get("metadata", {})
         }
         processed_results.append(processed_hit)
     
     return processed_results
+
+async def generate_insights():
+    # Fetch all documents
+    results = zilliz_client.query(
+        collection_name="documents",
+        output_fields=["metadata"],
+        limit=1000  # Adjust as needed
+    )
+
+    documents = [result["metadata"] for result in results]
+    
+    prompt = f"Analyze the following documents and provide insights:\n\n{json.dumps(documents, indent=2)}"
+    insights = llm.complete(prompt).text.strip()
+    
+    # Store insights in a new collection or as a special document
+    insight_data = {
+        "metadata": {
+            "type": "insight",
+            "content": insights,
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+    zilliz_client.insert(collection_name="documents", data=[insight_data])
+
+
+async def identify_patterns():
+    # Fetch all documents
+    results = zilliz_client.query(
+        collection_name="documents",
+        output_fields=["metadata"],
+        limit=1000  # Adjust as needed
+    )
+
+    documents = [result["metadata"] for result in results]
+    
+    prompt = f"Identify patterns across these documents:\n\n{json.dumps(documents, indent=2)}"
+    patterns = llm.complete(prompt).text.strip()
+    
+    # Store patterns in a new collection or as a special document
+    pattern_data = {
+        "metadata": {
+            "type": "pattern",
+            "content": patterns,
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+    zilliz_client.insert(collection_name="documents", data=[pattern_data])
+
+
+async def get_all_documents():
+    results = zilliz_client.query(
+        collection_name="documents",
+        output_fields=["metadata"],
+        expr="metadata.type != 'insight' && metadata.type != 'pattern'",
+        limit=1000  # Adjust as needed
+    )
+    return [result["metadata"] for result in results]
+
+
+# ... (keep existing imports and setup)
+
+async def get_latest_insight():
+    results = zilliz_client.query(
+        collection_name="documents",
+        output_fields=["metadata"],
+        expr="metadata['type'] == 'insight'",
+        limit=1,
+        sort="metadata['timestamp'] desc"
+    )
+    if results:
+        return results[0]['metadata']['content']
+    return None
+
+async def get_latest_pattern():
+    results = zilliz_client.query(
+        collection_name="documents",
+        output_fields=["metadata"],
+        expr="metadata['type'] == 'pattern'",
+        limit=1,
+        sort="metadata['timestamp'] desc"
+    )
+    if results:
+        return results[0]['metadata']['content']
+    return None
+
 
 def get_embedding_dim(embed_model):
     test_embedding = embed_model.get_text_embedding("test")
@@ -161,3 +306,24 @@ async def setup_zilliz():
         )
     except Exception as e:
         print(f"Error creating collection: {e}")
+
+# Initialize scheduler
+scheduler = AsyncIOScheduler()
+
+# Schedule tasks
+scheduler.add_job(generate_insights, 'interval', hours=24)
+scheduler.add_job(identify_patterns, 'interval', hours=48)
+
+# Start the scheduler
+scheduler.start()
+
+__all__ = [
+    "process_document",
+    "search_documents",
+    "setup_zilliz",
+    "update_document",
+    "generate_insights",
+    "identify_patterns",
+    "zilliz_client",
+    "embed_model"
+]

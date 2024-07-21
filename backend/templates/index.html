@@ -7,21 +7,47 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
 </head>
 <body>
-    <h1>Document Processor and Search</h1>
-    
-    <form id="uploadForm" enctype="multipart/form-data">
-        <h2>Upload Document</h2>
-        <input type="file" name="file" required>
-        <button type="submit">Upload and Process</button>
-    </form>
+    <div class="container">
+        <h1>Document Processor and Search</h1>
+        
+        <div class="section">
+            <h2>Upload Document</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit">Upload and Process</button>
+            </form>
+        </div>
 
-    <form id="searchForm">
-        <h2>Search Documents</h2>
-        <input type="text" name="query" placeholder="Enter your search query" required>
-        <button type="submit">Search</button>
-    </form>
+        <div class="section">
+            <h2>Update Document</h2>
+            <select id="documentSelect">
+                <option value="">Select a document to update</option>
+            </select>
+            <form id="updateForm" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit">Update Document</button>
+            </form>
+        </div>
 
-    <div id="results"></div>
+        <div class="section">
+            <h2>Search Documents</h2>
+            <form id="searchForm">
+                <input type="text" name="query" placeholder="Enter your search query" required>
+                <input type="text" name="filters" placeholder="Enter filters (optional)">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>Insights and Patterns</h2>
+            <button id="getInsights">Get Insights</button>
+            <button id="getPatterns">Get Patterns</button>
+        </div>
+
+        <div id="results" class="section"></div>
+        <div id="insights" class="section"></div>
+        <div id="patterns" class="section"></div>
+    </div>
 
     <script src="{{ url_for('static', path='/js/script.js') }}"></script>
 </body>
