@@ -57,11 +57,11 @@ export default function Home() {
 
   return (
     <>
-      <Head>
+      <head>
         <title>AI Assistant for ERP Management</title>
         <meta property="og:title" content="AI Assistant for ERP Management" />
         <link rel="icon" href='/forge.ico'/>
-      </Head>
+      </head>
 
       <header className="flex items-center justify-between p-5 bg-gray-800 bg-opacity-30 text-white w-full fixed top-0 z-50 shadow-md transition-opacity duration-300 ease-in-out">
         <div className="flex items-center">
